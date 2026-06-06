@@ -1,0 +1,19 @@
+{
+  "name": "Thought Archive",
+  "short_name": "Thought Archive",
+  "description": "Cloud-synced note & resource manager — web edition",
+  "lang": "ko",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0a0a0f",
+  "theme_color": "#0066FF",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

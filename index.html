@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Thought Archive</title>
+  <meta name="theme-color" content="#0066FF" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ══════════════════════════════════ LEFT SIDEBAR ════════════ -->
+  <aside id="sidebar">
+    <div class="logo-wrap">
+      <div class="logo-icon">🗄</div>
+      <div class="logo-text">
+        <span>Thought Archive</span>
+        <span id="app-version-label">v1.2.0 · web</span>
+      </div>
+    </div>
+
+    <div class="nav-item active" data-page="home" onclick="setNav(this)">
+      <span class="nav-icon">⊞</span>
+      <span data-i18n="navHome">Home</span>
+    </div>
+    <div class="nav-item" data-page="analytics" onclick="setNav(this)">
+      <span class="nav-icon">◈</span>
+      <span data-i18n="navAnalytics">Analytics</span>
+      <span class="nav-badge" id="analytics-badge">0</span>
+    </div>
+    <div class="nav-item" data-page="archive" onclick="setNav(this)">
+      <span class="nav-icon">⬡</span>
+      <span data-i18n="navArchive">Archive</span>
+    </div>
+
+    <div class="nav-label" id="tags-nav-label" style="display:none; margin-top:8px" data-i18n="tagsLabel">Tags</div>
+    <div class="sidebar-tags-wrap" id="sidebar-tags-wrap" style="display:none"></div>
+
+    <div class="sidebar-footer">
+      <div class="sync-status-wrap" id="footer-sync" onclick="syncNow()" title="Sync now">
+        <span class="sync-dot" id="footer-sync-dot" data-state="idle"></span>
+        <div class="sync-status-text">
+          <span id="footer-sync-status">Idle</span>
+          <span class="sync-status-last" id="footer-sync-last"></span>
+        </div>
+      </div>
+      <div class="nav-item" data-nav="settings" onclick="openSettings(); setNav(this)">
+        <span class="nav-icon">⚙</span>
+        <span data-i18n="navSettings">Settings</span>
+      </div>
+      <div class="user-chip" id="user-chip" onclick="logout()" title="Log out">
+        <div class="user-avatar" id="user-chip-avatar">G</div>
+        <div class="user-info">
+          <span id="user-chip-name">Guest</span>
+          <span id="user-chip-sub" data-i18n="offlineMode">Offline Mode</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══════════════════════════════════ CENTER MAIN ════════════ -->
+  <main id="main" data-view="home">
+    <!-- Top Bar -->
+    <div class="main-topbar">
+      <h1 id="page-title">Home</h1>
+      <div class="topbar-actions">
+        <span class="live-dot" title="Active session"></span>
+        <button class="topbar-btn" onclick="goHomeAndNewNote()" data-i18n="newNote">✎ New Note</button>
+        <button class="topbar-btn primary" onclick="goHomeAndAddResource()" data-i18n="addResource">＋ Add Resource</button>
+        <button class="topbar-btn" id="focus-btn" onclick="toggleFocusMode()" title="Focus Mode  (Ctrl+F)" data-i18n="focus">⊡ Focus</button>
+        <button class="topbar-btn icon-only" onclick="showShortcutHelp()" title="Keyboard shortcuts  (?)" aria-label="Keyboard shortcuts">?</button>
+        <button class="topbar-btn icon-only" onclick="openSettings()" title="Settings" aria-label="Settings">⚙</button>
+      </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-icon purple">📝</div>
+        <div class="stat-body">
+          <div class="stat-value" id="stat-notes">12</div>
+          <div class="stat-label" data-i18n="statNotesLabel">Notes Saved</div>
+          <div class="stat-delta up" data-i18n="statNotesDelta">↑ 3 this week</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon blue">🔗</div>
+        <div class="stat-body">
+          <div class="stat-value" id="stat-resources">8</div>
+          <div class="stat-label" data-i18n="statResourcesLabel">Resources Linked</div>
+          <div class="stat-delta up" data-i18n="statResDelta">↑ 2 today</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon mixed">⏱</div>
+        <div class="stat-body">
+          <div class="stat-value" id="stat-time">0m</div>
+          <div class="stat-label" data-i18n="statTimeLabel">Session Time</div>
+          <div class="stat-delta hot" data-i18n="statTimeActive">● Active now</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dual-View Stack -->
+    <div class="dual-view-wrap">
+      <!-- Tab Bar -->
+      <div class="dv-tabbar">
+        <div class="dv-tab active" id="tab-media" onclick="switchView('media')">
+          <div class="dv-tab-dot media"></div>
+          <span data-i18n="tabMedia">Media View</span>
+        </div>
+        <div class="dv-tab" id="tab-note" onclick="switchView('note')">
+          <div class="dv-tab-dot note"></div>
+          <span data-i18n="tabNote">Note View</span>
+        </div>
+        <div class="dv-tabbar-right">
+          <div class="dv-icon-btn disabled" id="nav-back" onclick="mediaBack()" title="Back" aria-label="Back">◀</div>
+          <div class="dv-icon-btn disabled" id="nav-forward" onclick="mediaForward()" title="Forward" aria-label="Forward">▶</div>
+          <div class="dv-icon-btn" id="nav-reload" onclick="mediaReload()" title="Reload" aria-label="Reload">⟳</div>
+          <div class="dv-icon-btn" id="autoplay-toggle" onclick="toggleAutoplayNext()" title="연속 재생 꺼짐" aria-label="Autoplay next">⏭</div>
+          <input class="dv-url-bar" id="url-bar" type="text" placeholder="https://..." value="" />
+          <div class="dv-icon-btn" onclick="loadUrl()" title="Load URL">↵</div>
+          <div class="dv-icon-btn" onclick="openExternal()" title="Open in browser">⧉</div>
+        </div>
+      </div>
+
+      <!-- Layers -->
+      <div class="dv-layers">
+        <!-- Layer A: Media -->
+        <div id="layer-media">
+          <div class="media-placeholder" id="media-placeholder">
+            <svg class="ph-svg" viewBox="0 0 96 84" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="phGrad" x1="0" y1="0" x2="96" y2="84" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#0066FF"/>
+                  <stop offset="100%" stop-color="#3385FF"/>
+                </linearGradient>
+                <filter id="phGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="1.5" result="blur"/>
+                  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
+              <!-- Monitor body -->
+              <rect x="4" y="4" width="88" height="58" rx="7" stroke="url(#phGrad)" stroke-width="2.5" fill="none" filter="url(#phGlow)"/>
+              <!-- Screen fill -->
+              <rect x="10" y="10" width="76" height="46" rx="4" fill="url(#phGrad)" fill-opacity="0.07"/>
+              <!-- Stand neck -->
+              <line x1="48" y1="62" x2="48" y2="74" stroke="url(#phGrad)" stroke-width="2.5" stroke-linecap="round"/>
+              <!-- Stand base -->
+              <path d="M32 74 Q48 70 64 74" stroke="url(#phGrad)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+              <!-- Play circle -->
+              <circle cx="48" cy="33" r="14" stroke="url(#phGrad)" stroke-width="2" fill="none" filter="url(#phGlow)"/>
+              <!-- Play triangle -->
+              <path d="M44.5 27.5 L57 33 L44.5 38.5 Z" fill="url(#phGrad)" filter="url(#phGlow)"/>
+            </svg>
+            <p data-i18n="mediaPh1">Select a resource from the list</p>
+            <small data-i18n="mediaPh2">YouTube, Shorts, or Websites will appear here</small>
+            <div class="empty-cta-row">
+              <button class="empty-cta" onclick="goHomeAndAddResource()" data-i18n="emptyAddResource">＋ Add Resource</button>
+            </div>
+          </div>
+          <!-- 웹 버전: Electron <webview> 대신 표준 <iframe>.
+               YouTube 등 임베드 허용 사이트만 인앱 표시되고, X-Frame-Options/CSP로
+               차단되는 사이트는 app.js가 iframe-blocked 오버레이로 '새 탭에서 열기' 폴백. -->
+          <iframe id="media-iframe"
+            referrerpolicy="strict-origin-when-cross-origin"
+            allow="autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write">
+          </iframe>
+          <!-- YouTube IFrame Player API 가 이 <div> 를 <iframe> 으로 교체.
+               영상 종료(ENDED) 감지 → '연속 재생' 켜짐 시 목록의 다음 영상 자동 재생. -->
+          <div id="yt-player"></div>
+          <!-- iframe 임베드 차단 시 표시되는 커스텀 오버레이 -->
+          <div class="iframe-blocked" id="iframe-blocked" style="display:none">
+            <svg class="iframe-blocked-icon" viewBox="0 0 80 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="blkGrad" x1="0" y1="0" x2="80" y2="72" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#0066FF"/>
+                  <stop offset="100%" stop-color="#3385FF"/>
+                </linearGradient>
+                <filter id="blkGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="1.5" result="blur"/>
+                  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
+              <!-- 브라우저 창 아웃라인 -->
+              <rect x="4" y="4" width="72" height="54" rx="7" stroke="url(#blkGrad)" stroke-width="2" fill="none" filter="url(#blkGlow)"/>
+              <line x1="4" y1="17" x2="76" y2="17" stroke="url(#blkGrad)" stroke-width="1.5"/>
+              <circle cx="14" cy="11" r="2.5" fill="url(#blkGrad)"/>
+              <circle cx="23" cy="11" r="2.5" fill="url(#blkGrad)"/>
+              <!-- X 표시 -->
+              <line x1="27" y1="28" x2="53" y2="52" stroke="url(#blkGrad)" stroke-width="2.5" stroke-linecap="round" filter="url(#blkGlow)"/>
+              <line x1="53" y1="28" x2="27" y2="52" stroke="url(#blkGrad)" stroke-width="2.5" stroke-linecap="round" filter="url(#blkGlow)"/>
+            </svg>
+            <p class="iframe-blocked-title">이 사이트는 임베드를 허용하지 않습니다</p>
+            <p class="iframe-blocked-url" id="iframe-blocked-url"></p>
+            <button class="iframe-blocked-btn" onclick="openExternal()">⧉ 브라우저에서 열기</button>
+          </div>
+        </div>
+
+        <!-- Layer B: Note -->
+        <div id="layer-note" class="hidden">
+          <div class="note-toolbar">
+            <button class="fmt-btn" onclick="fmt('bold')"><b>B</b></button>
+            <button class="fmt-btn" onclick="fmt('italic')"><i>I</i></button>
+            <button class="fmt-btn" onclick="fmt('underline')"><u>U</u></button>
+            <div class="note-sep"></div>
+            <button class="fmt-btn" onclick="insertMd('## ')">H2</button>
+            <button class="fmt-btn" onclick="insertMd('- ')" data-i18n="mdList">List</button>
+            <button class="fmt-btn" onclick="insertMd('> ')" data-i18n="mdQuote">Quote</button>
+            <button class="fmt-btn" onclick="insertMd('```\n\n```')" data-i18n="mdCode">Code</button>
+            <div class="note-sep"></div>
+            <button class="fmt-btn" onclick="insertTimestamp()" data-i18n="noteStamp">⏱ Stamp</button>
+            <button class="note-save-btn" onclick="saveNote()" data-i18n="noteSave">💾 Save</button>
+          </div>
+          <input class="note-title-input" id="note-title" type="text"
+            placeholder="Note title..." data-i18n-placeholder="noteTitlePh" />
+          <textarea id="note-editor"
+            placeholder="Start writing your thoughts...&#10;&#10;Select a resource to annotate, or type freely."
+            data-i18n-placeholder="noteEditorPh"></textarea>
+          <div class="note-statusbar">
+            <span><span data-i18n="noteWords">Words:</span> <b id="word-count">0</b></span>
+            <span><span data-i18n="noteChars">Chars:</span> <b id="char-count">0</b></span>
+            <span><span data-i18n="noteLines">Lines:</span> <b id="line-count">1</b></span>
+            <span id="save-status" style="margin-left:auto;" data-i18n="noteStatusNotSaved">Not saved</span>
+          </div>
+          <!-- Outgoing Backlinks Row (Feature 2) -->
+          <div class="note-outlinks-row" id="note-outlinks-row" style="display:none">
+            <span class="note-outlinks-label" data-i18n="outlinksLabel">→ Links</span>
+            <div class="note-outlinks-pills" id="note-outlinks-pills"></div>
+          </div>
+          <!-- Tag Input Row -->
+          <div class="note-tag-row">
+            <div class="note-tag-pills" id="note-tag-pills"></div>
+            <input class="note-tag-input" id="note-tag-input" type="text" placeholder="#태그 입력 후 Enter" data-i18n-placeholder="tagInputPh" maxlength="32" />
+          </div>
+          <!-- Save Confirm Panel -->
+          <div class="save-confirm-panel" id="save-confirm-panel">
+            <div class="scp-inner">
+              <div class="scp-section">
+                <span class="scp-label" data-i18n="scpColor">Color</span>
+                <div class="scp-colors" id="scp-colors"></div>
+              </div>
+              <div class="scp-sep"></div>
+              <div class="scp-section">
+                <span class="scp-label" data-i18n="scpEmoji">Emoji</span>
+                <div class="scp-emojis" id="scp-emojis"></div>
+              </div>
+              <div class="scp-actions">
+                <button class="scp-cancel" onclick="cancelSave()" data-i18n="scpCancel">Cancel</button>
+                <button class="scp-confirm" onclick="confirmSave()" data-i18n="noteSave">💾 Save</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analytics View -->
+    <div id="analytics-view">
+      <div class="analytics-header">
+        <div class="analytics-title" data-i18n="anTitle">◈ Analytics · Insights</div>
+        <div class="analytics-updated" id="analytics-updated"></div>
+      </div>
+      <div class="an-quick-row" id="an-quick-row"></div>
+      <div class="an-section">
+        <div class="an-section-title" data-i18n="anByType">Resources by Type</div>
+        <div class="an-type-bars" id="an-type-bars"></div>
+      </div>
+      <div class="an-bottom-row">
+        <div class="an-card">
+          <div class="an-section-title" data-i18n="anTopTags">Top Tags</div>
+          <div class="an-tag-list" id="an-tag-list"></div>
+        </div>
+        <div class="an-card">
+          <div class="an-section-title" data-i18n="anByColor">Notes by Color</div>
+          <div class="an-color-list" id="an-color-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Archive View -->
+    <div id="archive-view">
+      <div class="archive-header">
+        <div class="archive-title" data-i18n="archiveTitle">📁 Archive · Saved Notes</div>
+        <div class="archive-count" id="archive-count">0 notes</div>
+      </div>
+      <div class="archive-filter-row" id="archive-filter-row">
+        <div class="arc-filter-chip active" data-color="all" onclick="setArchiveColorFilter(this,'all')" title="All colors" data-i18n="archiveAll">All</div>
+        <div class="arc-filter-chip color-chip" data-color="#0066FF" onclick="setArchiveColorFilter(this,'#0066FF')" style="background:#0066FF" title="Blue"></div>
+        <div class="arc-filter-chip color-chip" data-color="#3385FF" onclick="setArchiveColorFilter(this,'#3385FF')" style="background:#3385FF" title="Sky Blue"></div>
+        <div class="arc-filter-chip color-chip" data-color="#FF6B6B" onclick="setArchiveColorFilter(this,'#FF6B6B')" style="background:#FF6B6B" title="Red"></div>
+        <div class="arc-filter-chip color-chip" data-color="#FFD93D" onclick="setArchiveColorFilter(this,'#FFD93D')" style="background:#FFD93D" title="Yellow"></div>
+        <div class="arc-filter-chip color-chip" data-color="#FF8C42" onclick="setArchiveColorFilter(this,'#FF8C42')" style="background:#FF8C42" title="Orange"></div>
+        <div class="arc-filter-chip color-chip" data-color="#C0C0C0" onclick="setArchiveColorFilter(this,'#C0C0C0')" style="background:#C0C0C0" title="Silver"></div>
+      </div>
+      <div class="archive-grid" id="archive-grid"></div>
+    </div>
+  </main>
+
+  <!-- ══════════════════════════════════ RIGHT PANEL ════════════ -->
+  <aside id="right">
+    <!-- Resource List Header -->
+    <div class="panel-header">
+      <div class="panel-title">
+        <div class="panel-title-dot"></div>
+        <span data-i18n="panelResourceList">Resource List</span>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="search-wrap">
+      <input class="search-box" id="search-input" type="text"
+        placeholder="🔍  Search resources..."
+        data-i18n-placeholder="searchPh"
+        oninput="filterBySearch()"
+        onblur="setTimeout(hideTagAutocomplete,150)" />
+      <div class="tag-autocomplete" id="tag-autocomplete"></div>
+    </div>
+
+    <!-- Filter Pills -->
+    <div class="filter-pills" id="filter-pills">
+      <div class="pill active" data-filter="all"     onclick="setPill(this,'all')"     data-i18n="pillAll">All</div>
+      <div class="pill"        data-filter="music"   onclick="setPill(this,'music')"   data-i18n="pillMusic">Music</div>
+      <div class="pill"        data-filter="youtube" onclick="setPill(this,'youtube')" data-i18n="pillYoutube">YouTube</div>
+      <div class="pill"        data-filter="shorts"  onclick="setPill(this,'shorts')"  data-i18n="pillShorts">Shorts</div>
+      <div class="pill"        data-filter="website" onclick="setPill(this,'website')" data-i18n="pillWebsite">Website</div>
+      <div class="pill"        data-filter="note"    onclick="setPill(this,'note')"    data-i18n="pillNote">Notes</div>
+    </div>
+
+    <!-- Resource Items -->
+    <div class="resource-list" id="resource-list"></div>
+
+    <!-- Backlinks Panel (always-on, replaces Activity Feed) -->
+    <div class="backlinks-panel" id="backlinks-panel">
+      <div class="backlinks-panel-head">
+        <div class="panel-title">
+          <div class="panel-title-dot" style="background:var(--blue)"></div>
+          <span data-i18n="backlinksTitle">Backlinks</span>
+          <span class="backlinks-count-badge" id="backlinks-count-badge">0</span>
+        </div>
+      </div>
+      <div class="backlinks-list" id="backlinks-list"></div>
+    </div>
+  </aside>
+
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Backlink Autocomplete Dropdown (Feature 1) -->
+<div id="backlink-dropdown"></div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     SETTINGS OVERLAY
+══════════════════════════════════════════════════════════════ -->
+<div id="settings-overlay" onclick="overlayClickClose(event)">
+  <div id="settings-modal">
+
+    <!-- Header -->
+    <div class="sett-header">
+      <div class="sett-header-left">
+        <div class="sett-header-icon">⚙</div>
+        <div class="sett-header-title">
+          <h2 data-i18n="settTitle">Settings</h2>
+          <p data-i18n="settDesc">Preferences are saved to localStorage automatically</p>
+        </div>
+      </div>
+      <div class="sett-close" onclick="closeSettings()">✕</div>
+    </div>
+
+    <!-- Body -->
+    <div class="sett-body">
+
+      <!-- ① Visual -->
+      <div class="sett-section">
+        <div class="sett-section-head">
+          <div class="sett-section-icon purple">◑</div>
+          <span class="sett-section-title" data-i18n="settVisual">VISUAL</span>
+          <div class="sett-section-line"></div>
+        </div>
+
+        <div class="sett-row">
+          <div class="sett-row-icon">☀</div>
+          <div class="sett-row-info">
+            <div class="sett-row-label" data-i18n="settDarkLight">Dark / Light Mode</div>
+            <div class="sett-row-desc" data-i18n="settDarkLightDesc">Switch between Deep Space dark and soft light theme</div>
+          </div>
+          <label class="sett-toggle">
+            <input type="checkbox" id="tog-theme" onchange="applyTheme(this.checked)" />
+            <div class="sett-toggle-track"></div>
+            <div class="sett-toggle-thumb"></div>
+          </label>
+          <span style="font-size:10px;color:var(--text-lo);min-width:32px;" id="theme-label" data-i18n="settThemeDark">Dark</span>
+        </div>
+
+        <div class="sett-row">
+          <div class="sett-row-icon">🔍</div>
+          <div class="sett-row-info">
+            <div class="sett-row-label" data-i18n="settUiScale">UI Size</div>
+            <div class="sett-row-desc" data-i18n="settUiScaleDesc">Scale the whole interface. Auto fits the window.</div>
+          </div>
+          <select class="sett-select" id="sel-uiscale" onchange="applyUiScale(this.value)">
+            <option value="auto" data-i18n="settUiScaleAuto">Auto (fit)</option>
+            <option value="0.9">90%</option>
+            <option value="1">100%</option>
+            <option value="1.1">110%</option>
+            <option value="1.25">125%</option>
+          </select>
+        </div>
+
+      </div>
+
+      <!-- ② Workflow -->
+      <div class="sett-section">
+        <div class="sett-section-head">
+          <div class="sett-section-icon blue">⚡</div>
+          <span class="sett-section-title" data-i18n="settWorkflow">WORKFLOW</span>
+          <div class="sett-section-line"></div>
+        </div>
+
+        <div class="sett-row">
+          <div class="sett-row-icon">⊞</div>
+          <div class="sett-row-info">
+            <div class="sett-row-label" data-i18n="settStartup">Default Startup View</div>
+            <div class="sett-row-desc" data-i18n="settStartupDesc">Which layer opens when the app launches</div>
+          </div>
+          <select class="sett-select" id="sel-startup" onchange="saveSetting('startupView', this.value)">
+            <option value="media" data-i18n="settStartupMedia">Media View</option>
+            <option value="note" data-i18n="settStartupNote">Note View</option>
+          </select>
+        </div>
+
+        <div class="sett-row">
+          <div class="sett-row-icon">⏱</div>
+          <div class="sett-row-info">
+            <div class="sett-row-label" data-i18n="settAutoSave">Auto-Save Interval</div>
+            <div class="sett-row-desc" data-i18n="settAutoSaveDesc">How often notes are saved automatically in the background</div>
+          </div>
+          <select class="sett-select" id="sel-autosave" onchange="applyAutoSave(this.value)">
+            <option value="60"  data-i18n="settAs1">Every 1 min</option>
+            <option value="300" selected data-i18n="settAs5">Every 5 min</option>
+            <option value="600" data-i18n="settAs10">Every 10 min</option>
+            <option value="0"   data-i18n="settAsOff">Disabled</option>
+          </select>
+        </div>
+
+        <div class="sett-row">
+          <div class="sett-row-icon">🎨</div>
+          <div class="sett-row-info">
+            <div class="sett-row-label" data-i18n="settDefaultNote">New Note Defaults</div>
+            <div class="sett-row-desc" data-i18n="settDefaultNoteDesc">Color &amp; emoji pre-selected for new notes</div>
+            <div class="def-note-picker">
+              <div id="def-colors" class="scp-colors"></div>
+              <div id="def-emojis" class="scp-emojis"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ③ System Tools -->
+      <div class="sett-section">
+        <div class="sett-section-head">
+          <div class="sett-section-icon mixed">◈</div>
+          <span class="sett-section-title" data-i18n="settSystemTools">SYSTEM TOOLS</span>
+          <div class="sett-section-line"></div>
+        </div>
+
+        <!-- 웹 버전: '항상 위' 는 데스크톱 창 기능이라 브라우저에서 무의미 → 숨김.
+             (#tog-ontop / #ontop-label 은 app.js 가 참조하므로 요소는 유지하되 display:none) -->
+        <div class="sett-row" style="display:none">
+          <div class="sett-row-icon">⬡</div>
+          <div class="sett-row-info">
+            <div class="sett-row-label" data-i18n="settAlwaysOnTop">Always on Top</div>
+            <div class="sett-row-desc" data-i18n="settAlwaysOnTopDesc">Keep window above all other windows</div>
+          </div>
+          <label class="sett-toggle">
+            <input type="checkbox" id="tog-ontop" onchange="applyAlwaysOnTop(this.checked)" />
+            <div class="sett-toggle-track"></div>
+            <div class="sett-toggle-thumb"></div>
+          </label>
+          <span style="font-size:10px;color:var(--text-lo);min-width:32px;" id="ontop-label" data-i18n="settOnTopOff">Off</span>
+        </div>
+
+        <div class="sett-row">
+          <div class="sett-row-icon">🌐</div>
+          <div class="sett-row-info">
+            <div class="sett-row-label">Language / 언어</div>
+            <div class="sett-row-desc" data-i18n="settLangDesc">Switch UI language between Korean and English</div>
+          </div>
+          <label class="sett-toggle">
+            <input type="checkbox" id="tog-lang" onchange="applyLanguage(this.checked ? 'ko' : 'en'); saveSetting('lang', this.checked ? 'ko' : 'en')" />
+            <div class="sett-toggle-track"></div>
+            <div class="sett-toggle-thumb"></div>
+          </label>
+          <span style="font-size:10px;color:var(--text-lo);min-width:32px;" id="lang-label">EN</span>
+        </div>
+      </div>
+
+      <!-- ④ Data Management -->
+      <div class="sett-section">
+        <div class="sett-section-head">
+          <div class="sett-section-icon danger">⬇</div>
+          <span class="sett-section-title" data-i18n="settDataMgmt">DATA MANAGEMENT</span>
+          <div class="sett-section-line"></div>
+        </div>
+
+        <div class="sett-row">
+          <div class="sett-row-icon">✎</div>
+          <div class="sett-row-info">
+            <div class="sett-row-label" data-i18n="settExportMd">Export as Markdown</div>
+            <div class="sett-row-desc" data-i18n="settExportMdDesc">Download the current note as a <b style="color:var(--blue)">.md</b> file</div>
+          </div>
+          <button class="sett-btn purple" onclick="exportMarkdown()" data-i18n="settExportBtn">Export .md</button>
+        </div>
+
+        <div class="sett-row">
+          <div class="sett-row-icon">🗃</div>
+          <div class="sett-row-info">
+            <div class="sett-row-label" data-i18n="settBackup">Backup &amp; Restore</div>
+            <div class="sett-row-desc" data-i18n="settBackupDesc">Export all notes &amp; resources as <b style="color:var(--blue)">.json</b>, or import a backup</div>
+          </div>
+          <div class="scp-actions">
+            <button class="sett-btn blue" onclick="exportAllData()" data-i18n="settBackupBtn">Export all</button>
+            <button class="sett-btn" onclick="document.getElementById('import-file').click()" data-i18n="settImportBtn">Import</button>
+            <input type="file" id="import-file" accept="application/json,.json" style="display:none" onchange="importAllData(this)" />
+          </div>
+        </div>
+
+        <div class="sett-row">
+          <div class="sett-row-icon">↺</div>
+          <div class="sett-row-info">
+            <div class="sett-row-label" data-i18n="settReset">Reset All Settings</div>
+            <div class="sett-row-desc" data-i18n="settResetDesc">Restore every preference to factory default — notes are kept</div>
+          </div>
+          <button class="sett-btn danger" onclick="resetSettings()" data-i18n="settResetBtn">Reset</button>
+        </div>
+      </div>
+
+      <!-- ⑤ Cloud Sync -->
+      <div class="sett-section">
+        <div class="sett-section-head">
+          <div class="sett-section-icon mixed">☁</div>
+          <span class="sett-section-title" data-i18n="settCloudSync">CLOUD SYNC</span>
+          <div class="sett-section-line"></div>
+        </div>
+
+        <div class="sett-row">
+          <div class="sett-row-icon">⇄</div>
+          <div class="sett-row-info">
+            <div class="sett-row-label" data-i18n="settSyncStatus">Sync Status</div>
+            <div class="sett-row-desc">
+              <span id="sync-status" data-i18n="syncIdle">Idle</span>
+              · <span data-i18n="settLastSynced">Last synced</span>: <span id="sync-last">—</span>
+            </div>
+          </div>
+          <button class="sett-btn blue" id="sync-now-btn" onclick="syncNow()" data-i18n="settSyncNow">Sync now</button>
+        </div>
+
+        <div class="sett-row">
+          <div class="sett-row-icon">⟳</div>
+          <div class="sett-row-info">
+            <div class="sett-row-label" data-i18n="settAutoSync">Auto-sync</div>
+            <div class="sett-row-desc" data-i18n="settAutoSyncDesc">Automatically push changes to the cloud when you save</div>
+          </div>
+          <label class="sett-toggle">
+            <input type="checkbox" id="tog-autosync" onchange="applyAutoSync_Cloud(this.checked)" />
+            <div class="sett-toggle-track"></div>
+            <div class="sett-toggle-thumb"></div>
+          </label>
+          <span style="font-size:10px;color:var(--text-lo);min-width:32px;" id="autosync-label" data-i18n="settOnTopOn">On</span>
+        </div>
+      </div>
+
+      <!-- ⑥ Account -->
+      <div class="sett-section">
+        <div class="sett-section-head">
+          <div class="sett-section-icon mixed">⚇</div>
+          <span class="sett-section-title" data-i18n="settAccount">ACCOUNT</span>
+          <div class="sett-section-line"></div>
+        </div>
+
+        <div class="sett-row">
+          <div class="sett-row-icon">🔑</div>
+          <div class="sett-row-info">
+            <div class="sett-row-label" data-i18n="settChangePass">Change Password</div>
+            <div class="sett-row-desc" data-i18n="settChangePassDesc">Update your account password</div>
+            <div id="change-pass-box" class="change-pass-box" style="display:none">
+              <input id="cp-new" class="auth-input" type="password" data-i18n-placeholder="cpNewPh" placeholder="New password" />
+              <input id="cp-confirm" class="auth-input" type="password" data-i18n-placeholder="cpConfirmPh" placeholder="Confirm new password" />
+              <div id="change-pass-error" class="auth-error" style="display:none"></div>
+              <button id="cp-submit" class="sett-btn blue" onclick="changePassword()" data-i18n="cpUpdateBtn">Update password</button>
+            </div>
+          </div>
+          <button class="sett-btn" onclick="toggleChangePassword()" data-i18n="settChangePassBtn">Change</button>
+        </div>
+
+        <div class="sett-row" id="sett-logout-row">
+          <div class="sett-row-icon">⏻</div>
+          <div class="sett-row-info">
+            <div class="sett-row-label" data-i18n="settLogout">Log Out</div>
+            <div class="sett-row-desc" id="sett-logout-desc" data-i18n="settLogoutDesc">Sign out of your account and return to the login screen</div>
+          </div>
+          <button class="sett-btn danger" id="sett-logout-btn" onclick="logoutFromSettings()" data-i18n="settLogoutBtn">Log Out</button>
+        </div>
+      </div>
+
+      <!-- ⑦ Feedback -->
+      <div class="sett-section">
+        <div class="sett-section-head">
+          <div class="sett-section-icon mixed">✦</div>
+          <span class="sett-section-title" data-i18n="settFeedback">FEEDBACK</span>
+          <div class="sett-section-line"></div>
+        </div>
+
+        <div class="sett-row">
+          <div class="sett-row-icon">✉</div>
+          <div class="sett-row-info">
+            <div class="sett-row-label" data-i18n="settSendFeedback">Send Feedback</div>
+            <div class="sett-row-desc" data-i18n="settSendFeedbackDesc">Report a bug or suggest an improvement</div>
+          </div>
+          <button class="sett-btn blue" onclick="openFeedback()" data-i18n="settSendFeedbackBtn">Feedback</button>
+        </div>
+      </div>
+
+    </div><!-- /sett-body -->
+
+    <!-- Footer -->
+    <div class="sett-footer">
+      <span class="sett-footer-note"><span data-i18n="settFooterNote">Settings auto-saved · Key:</span> <b>ta_settings</b></span>
+      <button class="sett-btn blue" onclick="closeSettings()" data-i18n="settClose">Close</button>
+    </div>
+
+  </div><!-- /settings-modal -->
+</div><!-- /settings-overlay -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     ADD RESOURCE MODAL
+══════════════════════════════════════════════════════════════ -->
+<div id="add-res-overlay" onclick="addResOverlayClickClose(event)">
+  <div id="add-res-modal">
+    <div class="sett-header">
+      <div class="sett-header-left">
+        <div class="sett-header-icon">＋</div>
+        <div class="sett-header-title">
+          <h2 data-i18n="arTitle">Add Resource</h2>
+          <p data-i18n="arDesc">Add a YouTube, Shorts, or Website link</p>
+        </div>
+      </div>
+      <div class="sett-close" onclick="closeAddResource()">✕</div>
+    </div>
+    <div class="ar-body">
+      <label class="ar-field">
+        <span class="ar-field-label" data-i18n="arName">Name</span>
+        <input id="ar-name" class="ar-input" type="text" placeholder="My resource" data-i18n-placeholder="arNamePh" />
+      </label>
+      <label class="ar-field">
+        <span class="ar-field-label" data-i18n="arUrl">URL (optional)</span>
+        <input id="ar-url" class="ar-input" type="text" placeholder="https://..." />
+      </label>
+      <label class="ar-field">
+        <span class="ar-field-label" data-i18n="arTags">Tags (optional)</span>
+        <input id="ar-tags" class="ar-input" type="text" placeholder="#dev #work" />
+      </label>
+    </div>
+    <div class="sett-footer">
+      <span class="sett-footer-note" data-i18n="arHint">YouTube / Shorts auto-detected from URL</span>
+      <div style="display:flex;gap:8px;">
+        <button class="sett-btn ar-cancel" onclick="closeAddResource()" data-i18n="arCancel">Cancel</button>
+        <button class="sett-btn blue" onclick="confirmAddResource()" data-i18n="arAdd">＋ Add</button>
+      </div>
+    </div>
+  </div><!-- /add-res-modal -->
+</div><!-- /add-res-overlay -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     AUTH OVERLAY (로그인 / 회원가입)
+══════════════════════════════════════════════════════════════ -->
+<div id="auth-overlay" data-mode="login">
+  <div id="auth-modal">
+    <div class="auth-brand">
+      <div class="auth-logo">◈</div>
+      <h2 data-i18n="authTitle">Thought Archive</h2>
+      <p id="auth-subtitle" data-i18n="authSubtitle">Sign in to access your notes &amp; resources</p>
+    </div>
+
+    <div class="auth-tabs">
+      <button id="auth-tab-login"  class="auth-tab active" onclick="setAuthMode('login')"  data-i18n="authTabLogin">Log In</button>
+      <button id="auth-tab-signup" class="auth-tab"        onclick="setAuthMode('signup')" data-i18n="authTabSignup">Sign Up</button>
+    </div>
+
+    <div class="auth-body">
+      <input id="auth-email" class="auth-input" type="email" autocomplete="username"
+             data-i18n-placeholder="authEmailPh" placeholder="Email" />
+      <input id="auth-password" class="auth-input" type="password"
+             data-i18n-placeholder="authPassPh" placeholder="Password" />
+      <div id="auth-confirm-row" style="display:none">
+        <input id="auth-confirm" class="auth-input" type="password"
+               data-i18n-placeholder="authConfirmPh" placeholder="Confirm password" />
+      </div>
+      <!-- 비밀번호 재설정 (reset 모드) -->
+      <button id="auth-send-code" class="auth-secondary" style="display:none" onclick="sendResetCode()" data-i18n="authSendCode">Send reset code</button>
+      <div id="auth-reset-row" style="display:none">
+        <input id="auth-reset-code" class="auth-input" type="text" inputmode="numeric" autocomplete="one-time-code"
+               data-i18n-placeholder="authCodePh" placeholder="6-digit code from email" />
+        <input id="auth-reset-newpass" class="auth-input" type="password"
+               data-i18n-placeholder="authNewPassPh" placeholder="New password" />
+      </div>
+      <div id="auth-error" class="auth-error" style="display:none"></div>
+      <button id="auth-submit" class="auth-submit" onclick="submitAuth()" data-i18n="authLoginBtn">Log In</button>
+      <div id="auth-forgot" class="auth-forgot"><span onclick="setAuthMode('reset')" data-i18n="authForgot">Forgot password?</span></div>
+    </div>
+  </div>
+</div><!-- /auth-overlay -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     SYNC CONFLICT DIALOG
+══════════════════════════════════════════════════════════════ -->
+<div id="sync-conflict-overlay">
+  <div id="sync-conflict-modal">
+    <div class="auth-brand">
+      <div class="auth-logo">⇄</div>
+      <h2 data-i18n="syncConflictTitle">Sync Conflict</h2>
+      <p data-i18n="syncConflictDesc">This device and the cloud were both changed. Which version should be kept?</p>
+    </div>
+    <div class="sync-conflict-actions">
+      <button class="auth-submit" onclick="resolveConflictUseCloud()" data-i18n="syncUseCloud">Use cloud version</button>
+      <button class="sett-btn" onclick="resolveConflictUseLocal()" data-i18n="syncUseLocal">Use this device</button>
+    </div>
+  </div>
+</div><!-- /sync-conflict-overlay -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     FEEDBACK MODAL
+══════════════════════════════════════════════════════════════ -->
+<div id="feedback-overlay" onclick="if(event.target===this)closeFeedback()">
+  <div id="feedback-modal">
+    <div class="auth-brand">
+      <div class="auth-logo">✉</div>
+      <h2 data-i18n="fbTitle">Send Feedback</h2>
+      <p data-i18n="fbDesc">Found a bug or have an idea? Let us know.</p>
+    </div>
+    <div class="fb-field">
+      <span class="fb-label" data-i18n="fbCategory">Type</span>
+      <div class="fb-cats" id="fb-cats">
+        <button type="button" class="fb-cat active" data-cat="bug"   onclick="pickFeedbackCat(this)" data-i18n="fbCatBug">🐞 Bug</button>
+        <button type="button" class="fb-cat"        data-cat="idea"  onclick="pickFeedbackCat(this)" data-i18n="fbCatIdea">💡 Idea</button>
+        <button type="button" class="fb-cat"        data-cat="other" onclick="pickFeedbackCat(this)" data-i18n="fbCatOther">💬 Other</button>
+      </div>
+    </div>
+    <div class="fb-field">
+      <span class="fb-label" data-i18n="fbMessage">Message</span>
+      <textarea id="fb-message" class="auth-input fb-textarea" rows="5" data-i18n-placeholder="fbMessagePh" placeholder="Describe it…"></textarea>
+    </div>
+    <div id="fb-error" class="auth-error" style="display:none"></div>
+    <div class="fb-actions">
+      <button class="auth-submit" id="fb-submit" onclick="submitFeedback()" data-i18n="fbSubmit">Send</button>
+      <button class="sett-btn" onclick="closeFeedback()" data-i18n="fbCancel">Cancel</button>
+    </div>
+  </div>
+</div><!-- /feedback-overlay -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     SHORTCUT HELP PANEL
+══════════════════════════════════════════════════════════════ -->
+<div id="shortcut-help">
+  <div class="sh-header">
+    <div class="sh-header-left">
+      <div class="sh-header-icon">⌨</div>
+      <div>
+        <div class="sh-title" data-i18n="shTitle">Keyboard Shortcuts</div>
+        <div class="sh-hint" data-i18n="shHint">Press <b style="color:var(--blue)">?</b> to open · click anywhere outside or <b style="color:var(--blue)">Esc</b> to close</div>
+      </div>
+    </div>
+    <span class="sh-close" onclick="closeShortcutHelp()">✕</span>
+  </div>
+  <div class="sh-grid">
+    <div class="sh-row">
+      <span class="sh-label" data-i18n="shSave">Save note</span>
+      <span class="sh-keys"><span class="kbd">Ctrl</span><span class="sh-plus">+</span><span class="kbd">S</span></span>
+    </div>
+    <div class="sh-row">
+      <span class="sh-label" data-i18n="shToggleView">Toggle Media / Note</span>
+      <span class="sh-keys"><span class="kbd">Ctrl</span><span class="sh-plus">+</span><span class="kbd">M</span></span>
+    </div>
+    <div class="sh-row">
+      <span class="sh-label" data-i18n="shFocusUrl">Focus URL bar</span>
+      <span class="sh-keys"><span class="kbd">Ctrl</span><span class="sh-plus">+</span><span class="kbd">K</span></span>
+    </div>
+    <div class="sh-row">
+      <span class="sh-label" data-i18n="shFocusSearch">Focus search</span>
+      <span class="sh-keys"><span class="kbd">Ctrl</span><span class="sh-plus">+</span><span class="kbd">Shift</span><span class="sh-plus">+</span><span class="kbd">F</span></span>
+    </div>
+    <div class="sh-row">
+      <span class="sh-label" data-i18n="shFocusMode">Toggle Focus Mode</span>
+      <span class="sh-keys"><span class="kbd">Ctrl</span><span class="sh-plus">+</span><span class="kbd">F</span></span>
+    </div>
+    <div class="sh-row">
+      <span class="sh-label" data-i18n="shSettings">Open Settings</span>
+      <span class="sh-keys"><span class="kbd">Ctrl</span><span class="sh-plus">+</span><span class="kbd">,</span></span>
+    </div>
+    <div class="sh-row">
+      <span class="sh-label" data-i18n="shHelp">This help panel</span>
+      <span class="sh-keys"><span class="kbd">?</span></span>
+    </div>
+    <div class="sh-row">
+      <span class="sh-label" data-i18n="shEscape">Close panel / Exit mode</span>
+      <span class="sh-keys"><span class="kbd">Esc</span></span>
+    </div>
+  </div>
+</div>
+
+<script src="vendor/supabase.js"></script>
+<script src="supabase-config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
