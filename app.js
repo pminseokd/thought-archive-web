@@ -2081,8 +2081,8 @@ function showToast(msg) {
 /* ─── Settings ───────────────────────────────────────────────────── */
 const SETTINGS_KEY = 'ta_settings';
 const SETTINGS_DEFAULT = {
-  theme: 'dark', startupView: 'media',
-  autoSave: 300, alwaysOnTop: false, lang: 'en', cloudAutoSync: true,
+  theme: 'light', startupView: 'media',
+  autoSave: 300, alwaysOnTop: false, lang: 'ko', cloudAutoSync: true,
   uiScale: 'auto', defaultColor: '#0066FF', defaultEmoji: '',
   autoplayNext: false   // YouTube 연속 재생(플레이리스트) 토글
 };
