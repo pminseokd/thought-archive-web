@@ -891,3 +891,24 @@ Supabase 프로젝트 생성 → `supabase-config.js`에 URL/anon key 입력 →
 - 메모 뷰 전환(`switchView('note')`)은 `#layer-media` 에 `.hidden`(opacity:0)만 적용, 미디어 서피스를 DOM에서 제거하거나 pause 하지 않음 → **오디오 계속 재생**. 플레이리스트도 백그라운드에서 다음 곡으로 진행.
 
 **검증(Playwright):** 음악 토글/필터/리로드 영속, 뒤로/앞으로(A·B·C 열람 → back→B→A→비활성, forward→B), 백그라운드(영상 재생 중 `switchView('note')` 후 `_ytPlayer.getPlayerState()` 가 1(playing) 유지·플레이어 DOM 잔존) 확인.
+
+---
+
+## 42. 기본 설정값을 라이트모드 + 한국어로 변경 (2026-06-06)
+
+**요청:** `thoughtarchive.uk` 신규 방문자 기본 베이스를 라이트 + 한국어로.
+
+**수정(`app.js` `SETTINGS_DEFAULT`):** `theme: 'dark'→'light'`, `lang: 'en'→'ko'`.
+- 저장된 설정 없을 때만 쓰이는 기본값 → **신규 방문자만** 라이트/한국어로 시작, 기존 사용자(localStorage) 설정은 유지. 로그인 화면도 라이트/한국어.
+- 데스크톱(1.2.0 §40)에도 동일 적용.
+
+**검증(Playwright, 신규 컨텍스트):** 로컬·라이브(`https://thoughtarchive.uk`) 모두 `body.light=true`, `settings.theme=light`, `settings.lang=ko`, 로그인 자막 한국어 확인. 토글(KO/라이트) 동기화 확인.
+
+---
+
+## 배포 정보 (요약)
+- **라이브:** https://thoughtarchive.uk (Vercel, 자동 HTTPS)
+- **저장소:** GitHub `pminseokd/thought-archive-web` (public) → `main` 푸시 시 Vercel 자동 재배포
+- **DNS:** Cloudflare (A→Vercel, CNAME www→`cname.vercel-dns.com`, 모두 DNS-only/회색구름)
+- **미게시(.vercelignore):** `Thought Archive.md`, `feedback-schema.sql` (저장소엔 있으나 사이트 경로 404)
+- **보류:** 이메일 인증(Confirm email) — 켜려면 커스텀 SMTP(Resend 등) 필요. Site URL=`https://thoughtarchive.uk`. (Supabase 내장 메일은 시간당 ~3통 한도라 운영 부적합)
