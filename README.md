@@ -1,8 +1,13 @@
 # Thought Archive — Web Edition
 
+🌐 **라이브: https://thoughtarchive.uk**
+
 브라우저에서 바로 도는 **Thought Archive** 웹 버전. 데스크톱(Electron) 앱과 동일한
 노트·리소스 관리 + Supabase 클라우드 동기화를 100% 클라이언트 사이드로 제공한다.
 별도 백엔드 서버가 필요 없고, 정적 파일만 호스팅하면 된다.
+
+> **배포:** GitHub(`pminseokd/thought-archive-web`) → Vercel 자동 배포. `main`에 푸시하면 즉시 재배포.
+> DNS는 Cloudflare(레코드는 DNS-only/회색구름), HTTPS는 Vercel 자동 발급.
 
 ## 데스크톱 앱과의 차이
 
