@@ -422,6 +422,12 @@ async function enterApp(user) {
   // ② 온라인이면 클라우드와 동기화 (비동기)
   updateSyncUI();
   if (sb && navigator.onLine) syncNow();
+
+  // ③ 첫 입장 시 사용 안내 1회 자동 표시 (이후엔 📖 버튼으로)
+  if (!localStorage.getItem('ta_guide_seen')) {
+    localStorage.setItem('ta_guide_seen', '1');
+    setTimeout(openGuide, 700);
+  }
 }
 
 async function logout() {
@@ -2173,6 +2179,71 @@ function overlayClickClose(e) {
   if (e.target === DOM.settingsOverlay) closeSettings();
 }
 
+/* ─── 사용 안내(가이드) 모달 ──────────────────────────────────────────
+ * 설정 오버레이 스타일을 재사용하는 기능 설명 팝업. 상단 📖 버튼으로 열고,
+ * 첫 입장 시 자동 1회 표시(localStorage 'ta_guide_seen'). 내용은 현재 언어로 렌더. */
+const GUIDE_SECTIONS = [
+  { icon:'✎', ko:['메모 작성', '제목·본문을 쓰고 저장하면 색상·이모지·태그를 지정할 수 있어요. 본문에 [[다른 메모 제목]]을 적으면 메모끼리 백링크로 연결됩니다.'],
+              en:['Notes', 'Write a title and body, then save with a color, emoji, and tags. Type [[Note Title]] in the body to link notes together with backlinks.'] },
+  { icon:'＋', ko:['리소스 추가', '＋ Add Resource로 YouTube·웹사이트 링크를 보관하세요. 우측 목록에서 클릭하면 미디어 뷰에서 열립니다.'],
+              en:['Add resources', 'Use + Add Resource to save YouTube or website links. Click one in the right-hand list to open it in the media view.'] },
+  { icon:'▶', ko:['미디어 뷰', 'YouTube·Vimeo는 앱 안에서 바로 재생돼요. 임베드가 막힌 사이트는 “새 탭에서 열기”로 폴백합니다. ◀▶ 버튼으로 이전·다음에 본 미디어를 오갈 수 있어요.'],
+              en:['Media view', 'YouTube and Vimeo play right inside the app. Sites that block embedding fall back to “open in new tab”. Use ◀▶ to move between previously viewed media.'] },
+  { icon:'⏭', ko:['연속 재생', '⏭ 토글을 켜면 영상이 끝났을 때 목록 순서대로 다음 YouTube가 자동 재생됩니다. 태그나 필터로 목록을 좁히면 나만의 플레이리스트가 돼요.'],
+              en:['Autoplay (playlist)', 'Turn on the ⏭ toggle and the next YouTube in the list auto-plays when one ends. Filter the list by tag to build your own playlist.'] },
+  { icon:'♪', ko:['음악 분류', '리소스에 마우스를 올리면 나타나는 ♪ 버튼으로 음악으로 표시하고, 상단 Music 필터로 모아볼 수 있어요.'],
+              en:['Music', 'Hover over a resource and click the ♪ button to mark it as music, then gather them with the Music filter at the top.'] },
+  { icon:'🔍', ko:['검색·태그·필터', '검색창(Ctrl+Shift+F)으로 제목·태그·본문을 찾고, 상단 필터(전체/음악/유튜브/숏츠/웹사이트/메모)와 사이드바 태그로 좁혀보세요.'],
+              en:['Search, tags, filters', 'Find titles, tags, and note bodies with search (Ctrl+Shift+F), and narrow down with the top filters and sidebar tags.'] },
+  { icon:'☁', ko:['클라우드 동기화', '로그인한 계정 기준으로 메모·리소스가 자동 저장·동기화됩니다. 다른 기기에서 같은 계정으로 로그인하면 그대로 이어집니다.'],
+              en:['Cloud sync', 'Notes and resources auto-save and sync to your logged-in account. Log in with the same account on another device to pick up where you left off.'] },
+  { icon:'⊡', ko:['집중 모드·단축키', 'Ctrl+F로 집중 모드를 켜고 끕니다. 전체 단축키 목록은 ? 키로 확인하세요.'],
+              en:['Focus mode & shortcuts', 'Toggle focus mode with Ctrl+F. Press the ? key to see the full list of keyboard shortcuts.'] },
+  { icon:'⚙', ko:['설정', '⚙ 설정에서 테마(다크/라이트)·언어(한/영)·자동 저장·기본 색상 등을 바꿀 수 있어요.'],
+              en:['Settings', 'Open ⚙ Settings to change the theme (dark/light), language, auto-save interval, default colors, and more.'] },
+];
+
+function renderGuide() {
+  const ko   = (currentLang === 'ko');
+  const title = document.getElementById('guide-title');
+  const desc  = document.getElementById('guide-desc');
+  const body  = document.getElementById('guide-body');
+  if (title) title.textContent = ko ? '사용 안내' : 'Guide';
+  if (desc)  desc.textContent  = ko ? '주요 기능 한눈에 보기' : 'A quick tour of the main features';
+  if (!body) return;
+  const intro = ko
+    ? 'Thought Archive의 주요 기능을 간단히 안내합니다. 이 창은 상단 📖 버튼으로 언제든 다시 열 수 있어요.'
+    : 'A quick tour of Thought Archive. Reopen this anytime with the 📖 button in the top bar.';
+  const rows = GUIDE_SECTIONS.map(s => {
+    const [label, d] = ko ? s.ko : s.en;
+    return `<div class="sett-row">
+      <div class="sett-row-icon">${s.icon}</div>
+      <div class="sett-row-info">
+        <div class="sett-row-label">${label}</div>
+        <div class="sett-row-desc">${d}</div>
+      </div>
+    </div>`;
+  }).join('');
+  body.innerHTML = `<p class="guide-intro">${intro}</p><div class="guide-rows">${rows}</div>`;
+}
+
+function openGuide() {
+  const el = document.getElementById('guide-overlay');
+  if (!el) return;
+  renderGuide();
+  el.classList.add('visible');
+  requestAnimationFrame(() => el.classList.add('open'));
+}
+function closeGuide() {
+  const el = document.getElementById('guide-overlay');
+  if (!el) return;
+  el.classList.remove('open');
+  el.addEventListener('transitionend', () => el.classList.remove('visible'), { once: true });
+}
+function guideClickClose(e) {
+  if (e.target === document.getElementById('guide-overlay')) closeGuide();
+}
+
 function applyTheme(isLight) {
   const mode = isLight ? 'light' : 'dark';
   document.getElementById('theme-label').textContent = isLight ? T('settThemeLight') : T('settThemeDark');
@@ -2476,6 +2547,8 @@ document.addEventListener('keydown', e => {
     const arOverlay = document.getElementById('add-res-overlay');
     if (arOverlay && arOverlay.classList.contains('open')) { closeAddResource(); return; }
     if (DOM.savePanel && DOM.savePanel.classList.contains('open')) { cancelSave(); return; }
+    const guideEl = document.getElementById('guide-overlay');
+    if (guideEl && guideEl.classList.contains('open')) { closeGuide(); return; }
     if (DOM.settingsOverlay.classList.contains('open'))  { closeSettings();     return; }
     if (helpOpen)                             { closeShortcutHelp(); return; }
     if (focusMode)                            { toggleFocusMode();   return; }

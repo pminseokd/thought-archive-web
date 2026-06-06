@@ -72,6 +72,7 @@
         <button class="topbar-btn" onclick="goHomeAndNewNote()" data-i18n="newNote">✎ New Note</button>
         <button class="topbar-btn primary" onclick="goHomeAndAddResource()" data-i18n="addResource">＋ Add Resource</button>
         <button class="topbar-btn" id="focus-btn" onclick="toggleFocusMode()" title="Focus Mode  (Ctrl+F)" data-i18n="focus">⊡ Focus</button>
+        <button class="topbar-btn icon-only" onclick="openGuide()" title="사용 안내 / Guide" aria-label="Guide">📖</button>
         <button class="topbar-btn icon-only" onclick="showShortcutHelp()" title="Keyboard shortcuts  (?)" aria-label="Keyboard shortcuts">?</button>
         <button class="topbar-btn icon-only" onclick="openSettings()" title="Settings" aria-label="Settings">⚙</button>
       </div>
@@ -354,6 +355,25 @@
 
 <!-- Backlink Autocomplete Dropdown (Feature 1) -->
 <div id="backlink-dropdown"></div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     GUIDE OVERLAY (사용 안내) — 설정 오버레이 스타일 재사용
+══════════════════════════════════════════════════════════════ -->
+<div id="guide-overlay" onclick="guideClickClose(event)">
+  <div id="guide-modal">
+    <div class="sett-header">
+      <div class="sett-header-left">
+        <div class="sett-header-icon">📖</div>
+        <div class="sett-header-title">
+          <h2 id="guide-title">사용 안내</h2>
+          <p id="guide-desc"></p>
+        </div>
+      </div>
+      <div class="sett-close" onclick="closeGuide()">✕</div>
+    </div>
+    <div class="sett-body" id="guide-body"></div>
+  </div>
+</div>
 
 <!-- ══════════════════════════════════════════════════════════════
      SETTINGS OVERLAY

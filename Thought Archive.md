@@ -906,6 +906,20 @@ Supabase 프로젝트 생성 → `supabase-config.js`에 URL/anon key 입력 →
 
 ---
 
+## 43. 사용 안내(가이드) 모달 추가 (2026-06-06)
+
+**요청:** 설정 창처럼 뜨는 팝업으로 모든 기능을 간단히 설명. (웹·데스크톱 공통)
+
+**구현:**
+- 상단바 **📖 버튼**(`openGuide()`) + **첫 입장 시 자동 1회**(`enterApp`에서 localStorage `ta_guide_seen` 가드).
+- `#guide-overlay`/`#guide-modal` 은 **설정 오버레이 CSS·`.sett-*` 클래스 재사용**(라이트모드 포함) — CSS 셀렉터에 guide만 합치고 `.guide-intro`/`.guide-rows`만 신설.
+- 내용은 `GUIDE_SECTIONS`(아이콘+ko/en) 데이터로 `renderGuide()`가 **현재 언어로 동적 렌더** — 9개 항목(메모/리소스/미디어뷰/연속재생/음악/검색·태그/동기화/집중·단축키/설정). 별도 i18n 키 없이 자체 보유.
+- 닫기: ✕ 버튼 / 바깥 클릭(`guideClickClose`) / Esc(전역 핸들러에 추가).
+
+**검증(Playwright):** 첫 입장 자동표시(9행)·`ta_guide_seen` 기록, Esc/📖/✕ 열고닫기, 한↔영 전환 시 내용 언어 전환, 콘솔 에러 0. (데스크톱은 동일 코드 + `node --check`; 미디어뷰 설명만 webview 기준으로 문구 조정.)
+
+---
+
 ## 배포 정보 (요약)
 - **라이브:** https://thoughtarchive.uk (Vercel, 자동 HTTPS)
 - **저장소:** GitHub `pminseokd/thought-archive-web` (public) → `main` 푸시 시 Vercel 자동 재배포

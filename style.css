@@ -627,9 +627,9 @@ body.light .dv-tabbar { background: rgba(200, 215, 235,0.8); }
 body.light #note-editor,
 body.light .note-title-input { color: var(--text-hi); }
 body.light .note-statusbar { background: rgba(200, 215, 235,0.8); }
-body.light #settings-modal { background: rgba(220, 234, 255,0.97); }
+body.light #settings-modal, body.light #guide-modal { background: rgba(220, 234, 255,0.97); }
 /* Light mode — Settings 가독성 보완 */
-body.light #settings-overlay { background: rgba(170, 195, 225,0.65); }
+body.light #settings-overlay, body.light #guide-overlay { background: rgba(170, 195, 225,0.65); }
 body.light .sett-row {
   background: rgba(255,255,255,0.5);
   border-color: rgba(0, 102, 255,0.1);
@@ -700,21 +700,21 @@ body.light .an-mini-bar-wrap { background: rgba(0,0,0,0.1); }
 /* ═══════════════════════════════════════════════════════════════
    SETTINGS OVERLAY
 ═══════════════════════════════════════════════════════════════ */
-#settings-overlay {
+#settings-overlay, #guide-overlay {
   position: fixed; inset: 0; z-index: 200;
   background: rgba(0, 9, 28,0.82);
   display: none; align-items: center; justify-content: center;
   opacity: 0;
   transition: opacity .2s;
 }
-#settings-overlay.visible {
+#settings-overlay.visible, #guide-overlay.visible {
   display: flex;
 }
-#settings-overlay.open {
+#settings-overlay.open, #guide-overlay.open {
   opacity: 1; pointer-events: all;
 }
 
-#settings-modal {
+#settings-modal, #guide-modal {
   width: 700px; max-height: 800px;
   background: rgba(0, 16, 40,0.97);
   border: 1px solid rgba(0, 102, 255,0.38);
@@ -725,7 +725,13 @@ body.light .an-mini-bar-wrap { background: rgba(0,0,0,0.1); }
   transform: translateY(18px) scale(.98);
   transition: transform .28s cubic-bezier(.34,1.56,.64,1);
 }
-#settings-overlay.open #settings-modal { transform: translateY(0) scale(1); }
+#settings-overlay.open #settings-modal,
+#guide-overlay.open #guide-modal { transform: translateY(0) scale(1); }
+
+/* 사용 안내(가이드) 인트로 문구 */
+.guide-intro { font-size: 12px; color: var(--text-mid); line-height: 1.6; margin: 0; }
+.guide-rows { display: flex; flex-direction: column; gap: 10px; }
+body.light .guide-intro { color: #51688C; }
 
 /* ── Modal Header ─────────────────────── */
 .sett-header {
