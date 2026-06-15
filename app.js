@@ -47,7 +47,7 @@ const TRANSLATIONS = {
     tabMedia:'Media View', tabNote:'Note View',
     mediaPh1:'Select a resource from the list',
     mediaPh2:'YouTube, Shorts, or Websites will appear here',
-    noteStamp:'⏱ Stamp', noteSave:'💾 Save',
+    noteStamp:'⏱ Stamp', noteSave:'💾 Save', noteUndoTitle:'Undo (Ctrl+Z)', noteUndoEmpty:'↶  Nothing to undo',
     noteStatusNotSaved:'Not saved', noteStatusAutoSave:'Auto-save on',
     noteSavedOk:'Saved ✓', noteAutoSaved:'Auto-saved ✓',
     noteTitlePh:'Note title...',
@@ -96,12 +96,15 @@ const TRANSLATIONS = {
     settLogoutBtn:'Log Out', settLogoutLockedDesc:'Offline mode — log in to enable this option',
     settFooterNote:'Settings auto-saved · Key:', settClose:'Close',
     shTitle:'Keyboard Shortcuts', shHint:'Press ? to open · click anywhere outside or Esc to close',
-    shSave:'Save note', shToggleView:'Toggle Media / Note', shFocusUrl:'Focus URL bar',
+    shSave:'Save note', shUndo:'Undo (note editor)', shToggleView:'Toggle Media / Note', shFocusUrl:'Focus URL bar',
     shFocusSearch:'Focus search', shFocusMode:'Toggle Focus Mode', shSettings:'Open Settings',
     shHelp:'This help panel', shEscape:'Close panel / Exit mode',
     arTitle:'Add Resource', arDesc:'Add a YouTube, Shorts, or Website link',
     arName:'Name', arNamePh:'My resource', arUrl:'URL (optional)', arTags:'Tags (optional)',
     arHint:'YouTube / Shorts auto-detected from URL', arCancel:'Cancel', arAdd:'＋ Add',
+    arEditTitle:'Edit Resource', arEditDesc:'Edit the name, URL, or tags', arSave:'Save',
+    resEdit:'Edit', resDelete:'Delete', resUpdated:'updated',
+    confirmDelTitle:'Delete resource?', confirmDelResMsg:'“%s” will be removed from the list. This cannot be undone.', confirmDelOk:'🗑  Delete',
   },
   ko: {
     newNote:'✎ 새 메모', addResource:'＋ 리소스 추가', focus:'⊡ 집중모드', focusExit:'⊠ 집중모드 해제',
@@ -150,7 +153,7 @@ const TRANSLATIONS = {
     tabMedia:'미디어 뷰', tabNote:'메모 뷰',
     mediaPh1:'목록에서 리소스를 선택하세요',
     mediaPh2:'유튜브, 숏츠, 웹사이트가 여기에 표시됩니다',
-    noteStamp:'⏱ 타임스탬프', noteSave:'💾 저장',
+    noteStamp:'⏱ 타임스탬프', noteSave:'💾 저장', noteUndoTitle:'되돌리기 (Ctrl+Z)', noteUndoEmpty:'↶  되돌릴 내용이 없습니다',
     noteStatusNotSaved:'미저장', noteStatusAutoSave:'자동저장 켜짐',
     noteSavedOk:'저장됨 ✓', noteAutoSaved:'자동저장됨 ✓',
     noteTitlePh:'메모 제목...',
@@ -199,12 +202,15 @@ const TRANSLATIONS = {
     settLogoutBtn:'로그아웃', settLogoutLockedDesc:'오프라인 모드 — 로그인하면 이 기능을 사용할 수 있습니다',
     settFooterNote:'설정 자동 저장 · 키:', settClose:'닫기',
     shTitle:'키보드 단축키', shHint:'? 키로 열기 · 바깥 아무 곳이나 클릭하거나 Esc로 닫기',
-    shSave:'메모 저장', shToggleView:'미디어 / 메모 전환', shFocusUrl:'URL 바 포커스',
+    shSave:'메모 저장', shUndo:'되돌리기 (메모 편집)', shToggleView:'미디어 / 메모 전환', shFocusUrl:'URL 바 포커스',
     shFocusSearch:'검색창 포커스', shFocusMode:'집중 모드 전환', shSettings:'설정 열기',
     shHelp:'단축키 도움말', shEscape:'패널 닫기 / 모드 종료',
     arTitle:'리소스 추가', arDesc:'유튜브 · 숏츠 · 웹사이트 링크를 추가합니다',
     arName:'이름', arNamePh:'리소스 이름', arUrl:'URL (선택)', arTags:'태그 (선택)',
     arHint:'URL에서 유튜브 / 숏츠 자동 감지', arCancel:'취소', arAdd:'＋ 추가',
+    arEditTitle:'리소스 수정', arEditDesc:'이름 · URL · 태그를 수정합니다', arSave:'저장',
+    resEdit:'수정', resDelete:'삭제', resUpdated:'수정됨',
+    confirmDelTitle:'리소스를 삭제할까요?', confirmDelResMsg:'“%s” 항목이 목록에서 제거됩니다. 되돌릴 수 없습니다.', confirmDelOk:'🗑  삭제',
   }
 };
 
@@ -228,6 +234,10 @@ function applyLanguage(lang) {
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
     const key = el.dataset.i18nPlaceholder;
     if (t[key] !== undefined) el.placeholder = t[key];
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const key = el.dataset.i18nTitle;
+    if (t[key] !== undefined) el.title = t[key];
   });
 
   const togLang = document.getElementById('tog-lang');
@@ -913,6 +923,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initAuth();
 
   DOM.noteEditor.addEventListener('input', updateWordCount);
+  DOM.noteEditor.addEventListener('beforeinput', _onEditorBeforeInput); // 되돌리기 히스토리 캡처
   DOM.noteEditor.addEventListener('keydown', _onEditorTab);   // Tab = 코드 들여쓰기 (포커스 이동 X)
 
   /* (웹: did-navigate 등 Electron <webview> 전용 이벤트는 <iframe>에서 발생하지 않으므로 제거.
@@ -1289,7 +1300,8 @@ function renderResources(filter = activeFilter, search = '') {
       </div>
       <div class="res-badge ${r.thumb}">${r.type}</div>
       <button class="res-music${r.music ? ' active' : ''}" title="${r.music ? '음악 해제' : '음악으로 표시'}" onclick="event.stopPropagation(); toggleMusic(${r.id})">♪</button>
-      <button class="res-delete" title="Delete" onclick="event.stopPropagation(); deleteResource(${r.id})">✕</button>
+      ${r.type !== 'note' ? `<button class="res-edit" title="${T('resEdit')}" onclick="event.stopPropagation(); editResource(${r.id})">✎</button>` : ''}
+      <button class="res-delete" title="${T('resDelete')}" onclick="event.stopPropagation(); deleteResource(${r.id})">✕</button>
     `;
     div.addEventListener('click', () => onResourceClick(r));
     frag.appendChild(div);
@@ -1781,6 +1793,7 @@ function fmt(cmd) {
   const wrap  = { bold:'**', italic:'*', underline:'__' };
   const m     = wrap[cmd];
   if (!m) return;
+  captureNoteUndo();
 
   const already = sel.startsWith(m) && sel.endsWith(m) && sel.length > m.length * 2;
   const replacement = already ? sel.slice(m.length, sel.length - m.length) : m + (sel || 'text') + m;
@@ -1794,6 +1807,7 @@ function fmt(cmd) {
 
 function insertMd(md) {
   const ta    = DOM.noteEditor;
+  captureNoteUndo();
   const start = ta.selectionStart;
   const end   = ta.selectionEnd;
   ta.value    = ta.value.slice(0, start) + md + ta.value.slice(end);
@@ -1805,6 +1819,51 @@ function insertMd(md) {
 function insertTimestamp() {
   const ts = new Date().toLocaleString('ko-KR', { hour12: false });
   insertMd(`\n[${ts}] `);
+}
+
+/* ─── 노트 에디터 되돌리기(undo) ──────────────────────────────────────
+ * textarea의 value를 프로그램적으로(fmt/insertMd/insertBacklink 등) 덮어쓰면
+ * 브라우저 네이티브 undo 스택이 깨져 Ctrl+Z가 동작하지 않음.
+ * → 노트 단위(currentNoteKey 스코프) 수동 히스토리를 유지. 노트가 바뀌면
+ *   자동으로 비워지므로 노트 로드 지점을 따로 건드릴 필요가 없음. */
+let _noteUndo = [];
+let _undoNoteKey = null;
+let _lastUndoCapture = 0;
+const NOTE_UNDO_LIMIT = 120;
+
+function captureNoteUndo() {
+  const ta = DOM.noteEditor;
+  if (!ta) return;
+  if (currentNoteKey !== _undoNoteKey) { _noteUndo = []; _undoNoteKey = currentNoteKey; }
+  const top = _noteUndo[_noteUndo.length - 1];
+  if (top && top.value === ta.value) return;       // 변화 없으면 스냅샷 생략
+  _noteUndo.push({ value: ta.value, start: ta.selectionStart, end: ta.selectionEnd });
+  if (_noteUndo.length > NOTE_UNDO_LIMIT) _noteUndo.shift();
+}
+
+/* 타이핑은 단어/구간 단위로 묶어 스냅샷(공백·줄바꿈·삭제·400ms 휴지 경계). */
+function _onEditorBeforeInput(e) {
+  const now = Date.now();
+  const breakChar = e.data && /\s/.test(e.data);
+  const isDelete  = e.inputType && e.inputType.startsWith('delete');
+  if (now - _lastUndoCapture > 400 || breakChar || isDelete) captureNoteUndo();
+  _lastUndoCapture = now;
+}
+
+function undoNote() {
+  const ta = DOM.noteEditor;
+  if (!ta) return;
+  if (currentNoteKey !== _undoNoteKey || _noteUndo.length === 0) {
+    showToast(T('noteUndoEmpty'));
+    return;
+  }
+  const prev = _noteUndo.pop();
+  ta.value = prev.value;
+  ta.selectionStart = prev.start;
+  ta.selectionEnd   = prev.end;
+  ta.focus();
+  updateWordCount();
+  updateNoteOutlinks();
 }
 
 /* ─── Tag System ─────────────────────────────────────────────────── */
@@ -1960,20 +2019,53 @@ function setPill(el, filter) {
 }
 
 /* ─── Add Resource (in-app modal — Electron은 prompt() 미지원) ────── */
-function addResource() {
+/* 리소스 추가/수정 공용 모달의 모드. null = 추가, id = 해당 리소스 수정. */
+let _editingResId = null;
+
+/* 모달 헤더/버튼 라벨을 추가/수정 모드에 맞게 세팅 (열 때마다 호출). */
+function _setResModalMode(editing) {
+  const icon  = document.getElementById('ar-modal-icon');
+  const title = document.getElementById('ar-modal-title');
+  const desc  = document.getElementById('ar-modal-desc');
+  const btn   = document.getElementById('ar-confirm-btn');
+  if (icon)  icon.textContent  = editing ? '✎' : '＋';
+  if (title) title.textContent = editing ? T('arEditTitle') : T('arTitle');
+  if (desc)  desc.textContent  = editing ? T('arEditDesc')  : T('arDesc');
+  if (btn)   btn.textContent   = editing ? T('arSave')      : T('arAdd');
+}
+
+function _openResModal() {
   const overlay = document.getElementById('add-res-overlay');
   if (!overlay) return;
-  document.getElementById('ar-name').value = '';
-  document.getElementById('ar-url').value  = '';
-  document.getElementById('ar-tags').value = '';
   overlay.classList.add('visible');
   requestAnimationFrame(() => overlay.classList.add('open'));
   setTimeout(() => document.getElementById('ar-name')?.focus(), 60);
 }
 
+function addResource() {
+  _editingResId = null;
+  document.getElementById('ar-name').value = '';
+  document.getElementById('ar-url').value  = '';
+  document.getElementById('ar-tags').value = '';
+  _setResModalMode(false);
+  _openResModal();
+}
+
+function editResource(id) {
+  const r = RESOURCES.find(x => x.id === id);
+  if (!r) return;
+  _editingResId = id;
+  document.getElementById('ar-name').value = r.name || '';
+  document.getElementById('ar-url').value  = r.url || '';
+  document.getElementById('ar-tags').value = (r.tags || []).join(' ');
+  _setResModalMode(true);
+  _openResModal();
+}
+
 function closeAddResource() {
   const overlay = document.getElementById('add-res-overlay');
   if (!overlay) return;
+  _editingResId = null;
   overlay.classList.remove('open');
   overlay.addEventListener('transitionend', () => overlay.classList.remove('visible'), { once: true });
 }
@@ -2001,6 +2093,29 @@ function confirmAddResource() {
   if (url) {
     try { meta = new URL(url.startsWith('http') ? url : 'https://' + url).hostname; }
     catch (_) { meta = url; }
+  }
+
+  if (_editingResId != null) {
+    /* ── 수정 모드: 기존 리소스 업데이트(id·순서·music 플래그 유지) ── */
+    const r = RESOURCES.find(x => x.id === _editingResId);
+    if (r) {
+      Object.assign(r, {
+        type, name, meta,
+        url: url || null,
+        icon: iconMap[type],
+        thumb: thumbMap[type],
+        tags
+      });
+      saveResources();
+      invalidateTagCache();
+      renderResources(activeFilter, DOM.searchInput?.value || '');
+      renderSidebarTags();
+      updateStatCounters();
+      if (activeResId === r.id && r.url) loadResource(r);   // 열려있던 리소스면 새 URL 반영
+      showToast(`✎  "${name}" ${T('resUpdated')}`);
+    }
+    closeAddResource();
+    return;
   }
 
   const newR = {
@@ -2038,7 +2153,20 @@ function saveResources() {
 }
 
 /* ─── Delete Resource ────────────────────────────────────────────── */
+/* 삭제 전 확인 팝업을 띄우고, 확인 시에만 실제 삭제(_doDeleteResource) 실행. */
 function deleteResource(id) {
+  const r = RESOURCES.find(x => x.id === id);
+  if (!r) return;
+  showConfirm({
+    icon: '🗑',
+    title: T('confirmDelTitle'),
+    message: T('confirmDelResMsg').replace('%s', r.name),
+    okLabel: T('confirmDelOk'),
+    onOk: () => _doDeleteResource(id)
+  });
+}
+
+function _doDeleteResource(id) {
   const idx = RESOURCES.findIndex(r => r.id === id);
   if (idx === -1) return;
   const r = RESOURCES[idx];
@@ -2073,6 +2201,44 @@ function deleteResource(id) {
   showToast(`🗑  "${r.name}" removed`);
 }
 
+
+/* ─── 범용 확인 팝업 ─────────────────────────────────────────────────
+ * showConfirm({icon,title,message,okLabel,onOk}) — 확인 시 onOk 실행.
+ * 설정 오버레이/모달 스타일을 재사용. Esc·바깥 클릭·✕·취소로 닫힘. */
+let _confirmOnOk = null;
+function showConfirm(opts) {
+  const overlay = document.getElementById('confirm-overlay');
+  if (!overlay) { if (opts.onOk) opts.onOk(); return; }   // 폴백: 모달 없으면 바로 실행
+  const iconEl = document.getElementById('confirm-icon');
+  const titleEl = document.getElementById('confirm-title');
+  const msgEl  = document.getElementById('confirm-message');
+  const okBtn  = document.getElementById('confirm-ok-btn');
+  const cancelBtn = document.getElementById('confirm-cancel-btn');
+  if (iconEl)  iconEl.textContent  = opts.icon || '⚠';
+  if (titleEl) titleEl.textContent = opts.title || '';
+  if (msgEl)   msgEl.textContent   = opts.message || '';
+  if (okBtn)   okBtn.textContent   = opts.okLabel || T('confirmDelOk');
+  if (cancelBtn) cancelBtn.textContent = T('arCancel');
+  _confirmOnOk = opts.onOk || null;
+  overlay.classList.add('visible');
+  requestAnimationFrame(() => overlay.classList.add('open'));
+  setTimeout(() => okBtn?.focus(), 60);
+}
+function closeConfirm() {
+  const overlay = document.getElementById('confirm-overlay');
+  if (!overlay) return;
+  _confirmOnOk = null;
+  overlay.classList.remove('open');
+  overlay.addEventListener('transitionend', () => overlay.classList.remove('visible'), { once: true });
+}
+function confirmOk() {
+  const cb = _confirmOnOk;
+  closeConfirm();
+  if (cb) cb();
+}
+function confirmOverlayClickClose(e) {
+  if (e.target === document.getElementById('confirm-overlay')) closeConfirm();
+}
 
 /* ─── Toast ──────────────────────────────────────────────────────── */
 let toastTimer;
@@ -2183,8 +2349,10 @@ function overlayClickClose(e) {
  * 설정 오버레이 스타일을 재사용하는 기능 설명 팝업. 상단 📖 버튼으로 열고,
  * 첫 입장 시 자동 1회 표시(localStorage 'ta_guide_seen'). 내용은 현재 언어로 렌더. */
 const GUIDE_SECTIONS = [
-  { icon:'✎', ko:['메모 작성', '제목·본문을 쓰고 저장하면 색상·이모지·태그를 지정할 수 있어요. 본문에 [[다른 메모 제목]]을 적으면 메모끼리 백링크로 연결됩니다.'],
-              en:['Notes', 'Write a title and body, then save with a color, emoji, and tags. Type [[Note Title]] in the body to link notes together with backlinks.'] },
+  { icon:'✎', ko:['메모 작성', '제목·본문을 쓰고 저장하면 색상·이모지·태그를 지정할 수 있어요. 글자/단어 수 카운트와 마크다운 내보내기도 지원합니다.'],
+              en:['Notes', 'Write a title and body, then save with a color, emoji, and tags. Character/word counts and Markdown export are supported too.'] },
+  { icon:'🔗', ko:['백링크 — 메모 잇기', '메모 본문에 [[ 를 입력하면 메모 제목 자동완성이 뜹니다. ↑↓로 고르고 Enter(또는 항목 클릭)로 넣거나, [[메모 제목]]을 직접 적어도 돼요. 이렇게 연결하면 가리킨 메모의 우측 하단 백링크 패널에 "이 메모를 참조하는 메모"로 나타나고, 항목을 클릭하면 그 메모로 바로 이동합니다.'],
+              en:['Backlinks — link notes', 'Type [[ in a note body to pop up title autocomplete. Pick with ↑↓ then Enter (or click an item), or just write [[Note Title]] yourself. The linked note then lists this one in its Backlinks panel (bottom-right), and clicking an entry jumps straight to that note.'] },
   { icon:'＋', ko:['리소스 추가', '＋ Add Resource로 YouTube·웹사이트 링크를 보관하세요. 우측 목록에서 클릭하면 미디어 뷰에서 열립니다.'],
               en:['Add resources', 'Use + Add Resource to save YouTube or website links. Click one in the right-hand list to open it in the media view.'] },
   { icon:'▶', ko:['미디어 뷰', 'YouTube·Vimeo는 앱 안에서 바로 재생돼요. 임베드가 막힌 사이트는 “새 탭에서 열기”로 폴백합니다. ◀▶ 버튼으로 이전·다음에 본 미디어를 오갈 수 있어요.'],
@@ -2544,6 +2712,8 @@ document.addEventListener('keydown', e => {
   const inInput  = ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName);
 
   if (e.key === 'Escape') {
+    const cfOverlay = document.getElementById('confirm-overlay');
+    if (cfOverlay && cfOverlay.classList.contains('open')) { closeConfirm(); return; }
     const arOverlay = document.getElementById('add-res-overlay');
     if (arOverlay && arOverlay.classList.contains('open')) { closeAddResource(); return; }
     if (DOM.savePanel && DOM.savePanel.classList.contains('open')) { cancelSave(); return; }
@@ -2564,6 +2734,14 @@ document.addEventListener('keydown', e => {
       case 's':
         e.preventDefault();
         saveNote();
+        break;
+      case 'z':
+        /* 노트 에디터에 포커스가 있을 때만 가로채 자체 undo 실행.
+           (제목·태그·URL·검색 입력칸에선 네이티브 undo 유지) */
+        if (!e.shiftKey && document.activeElement === DOM.noteEditor) {
+          e.preventDefault();
+          undoNote();
+        }
         break;
       case 'm':
         e.preventDefault();
@@ -2772,6 +2950,7 @@ function hideBacklinkDropdown() {
 function insertBacklink(title) {
   const editor = DOM.noteEditor;
   if (!editor) return;
+  captureNoteUndo();
   const val     = editor.value;
   const pos     = editor.selectionStart;
   const before  = val.slice(0, pos);

@@ -920,6 +920,42 @@ Supabase 프로젝트 생성 → `supabase-config.js`에 URL/anon key 입력 →
 
 ---
 
+## 44. 가이드에 백링크 설명 보강 (2026-06-15)
+
+**요청:** 기능 설명(사용 안내 모달)에 백링크 거는 법 추가 — 기존 설명 부족. (웹·데스크톱 공통)
+
+**수정(`app.js` `GUIDE_SECTIONS`):**
+- 기존 "메모 작성(✎)" 항목에 한 줄로만 묻혀 있던 백링크 언급을 분리 → **전용 항목 "백링크 — 메모 잇기(🔗)" 신설**(ko/en). `[[` 자동완성 팝업(↑↓·Enter·클릭) / `[[메모 제목]]` 직접 입력 / 대상 메모 우측 하단 백링크 패널 노출 + 클릭 이동까지 거는 법을 단계적으로 서술.
+- "메모 작성" 항목 문구는 중복 제거 후 글자/단어 수·마크다운 내보내기 안내로 정리. → 가이드 항목 9개→10개.
+- `renderGuide()`/모달 구조는 그대로(데이터만 추가).
+
+**참고:** 데스크톱 에디션도 동일 변경(데스크톱 doc §42).
+
+**검증(Playwright):** localhost:7788에서 📖 가이드에 "백링크 — 메모 잇기" 항목 노출 + 한↔영 전환 확인.
+
+---
+
+## 45. 메모 되돌리기 + 보관함 이모지 위치 + 리소스 수정/삭제확인 (2026-06-15)
+
+**요청:** ① 메모 뷰 B/U 서식 후 되돌리기(undo) 안 됨 → Ctrl+Z 또는 버튼. ② 보관함 카드에서 고정 핀과 이모지 겹침 → 이모지 좌측으로. ③ 리소스 항목 수정 가능 + 삭제 확인 팝업. (웹·데스크톱 공통)
+
+**① 메모 되돌리기(`app.js`):** `fmt`/`insertMd`/`insertBacklink`가 textarea `value`를 직접 덮어써 네이티브 undo 스택이 깨지는 게 원인.
+- **노트 단위(`currentNoteKey` 스코프) 수동 히스토리**(`_noteUndo`/`captureNoteUndo`/`undoNote`). 노트 변경 시 자동 초기화 → 노트 로드 지점 무수정, 충돌 없음.
+- 타이핑은 `beforeinput`에서 공백·줄바꿈·삭제·400ms 휴지 경계로 단어 단위 스냅샷. 서식 함수는 변경 직전 캡처.
+- 트리거: **Ctrl+Z**(노트 에디터 포커스 시만 가로챔) + 툴바 **↶ 버튼**. 도움말 패널 Ctrl+Z 행 추가, `data-i18n-title` 번역 루프 신설.
+
+**② 보관함 이모지(`style.css` `.archive-card-emoji`):** 우상단 절대배치(`right:10px`) → 핀과 겹침. `align-self:flex-start`로 본문 흐름 좌측 상단으로 이동, 절대배치 제거.
+
+**③ 리소스 수정/삭제확인(`app.js`·`index.html`):**
+- 리소스 항목에 **✎ 수정 버튼**(`.res-edit`). 추가 모달을 추가/수정 공용화(`_editingResId`/`_setResModalMode`/`editResource`). 수정 시 id·순서·music 유지, URL로 type 재판정, 열려있던 리소스는 `loadResource`로 새 URL 반영.
+- **범용 확인 팝업**(`#confirm-overlay`/`showConfirm`/`confirmOk`) 신설(add-res 스타일 재사용). `deleteResource`는 팝업 → 확인 시에만 `_doDeleteResource`.
+
+**참고:** 데스크톱(1.2.0 §43)에도 동일 적용. 양쪽 공통 코드.
+
+**검증(Playwright, localhost:7788):** fmt/insertMd 후 undo 복원, 이모지 `position:static`·핀 비겹침, ✎ 수정모달(필드 채움·라벨 전환)·저장 반영, 삭제 확인팝업(확인 전 미삭제·확인 후 삭제·Esc 닫힘) 전부 PASS. 페이지 에러 0건.
+
+---
+
 ## 배포 정보 (요약)
 - **라이브:** https://thoughtarchive.uk (Vercel, 자동 HTTPS)
 - **저장소:** GitHub `pminseokd/thought-archive-web` (public) → `main` 푸시 시 Vercel 자동 재배포

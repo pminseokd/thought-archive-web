@@ -215,6 +215,7 @@
             <button class="fmt-btn" onclick="insertMd('```\n\n```')" data-i18n="mdCode">Code</button>
             <div class="note-sep"></div>
             <button class="fmt-btn" onclick="insertTimestamp()" data-i18n="noteStamp">⏱ Stamp</button>
+            <button class="fmt-btn" onclick="undoNote()" title="되돌리기 (Ctrl+Z)" data-i18n-title="noteUndoTitle" aria-label="Undo">↶</button>
             <button class="note-save-btn" onclick="saveNote()" data-i18n="noteSave">💾 Save</button>
           </div>
           <input class="note-title-input" id="note-title" type="text"
@@ -665,10 +666,10 @@
   <div id="add-res-modal">
     <div class="sett-header">
       <div class="sett-header-left">
-        <div class="sett-header-icon">＋</div>
+        <div class="sett-header-icon" id="ar-modal-icon">＋</div>
         <div class="sett-header-title">
-          <h2 data-i18n="arTitle">Add Resource</h2>
-          <p data-i18n="arDesc">Add a YouTube, Shorts, or Website link</p>
+          <h2 id="ar-modal-title" data-i18n="arTitle">Add Resource</h2>
+          <p id="ar-modal-desc" data-i18n="arDesc">Add a YouTube, Shorts, or Website link</p>
         </div>
       </div>
       <div class="sett-close" onclick="closeAddResource()">✕</div>
@@ -691,11 +692,35 @@
       <span class="sett-footer-note" data-i18n="arHint">YouTube / Shorts auto-detected from URL</span>
       <div style="display:flex;gap:8px;">
         <button class="sett-btn ar-cancel" onclick="closeAddResource()" data-i18n="arCancel">Cancel</button>
-        <button class="sett-btn blue" onclick="confirmAddResource()" data-i18n="arAdd">＋ Add</button>
+        <button class="sett-btn blue" id="ar-confirm-btn" onclick="confirmAddResource()" data-i18n="arAdd">＋ Add</button>
       </div>
     </div>
   </div><!-- /add-res-modal -->
 </div><!-- /add-res-overlay -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     CONFIRM OVERLAY (범용 확인 팝업 — 삭제 등)
+══════════════════════════════════════════════════════════════ -->
+<div id="confirm-overlay" onclick="confirmOverlayClickClose(event)">
+  <div id="confirm-modal">
+    <div class="sett-header">
+      <div class="sett-header-left">
+        <div class="sett-header-icon" id="confirm-icon">🗑</div>
+        <div class="sett-header-title">
+          <h2 id="confirm-title">Delete</h2>
+          <p id="confirm-message"></p>
+        </div>
+      </div>
+      <div class="sett-close" onclick="closeConfirm()">✕</div>
+    </div>
+    <div class="sett-footer" style="justify-content:flex-end;">
+      <div style="display:flex;gap:8px;">
+        <button class="sett-btn ar-cancel" id="confirm-cancel-btn" onclick="closeConfirm()">Cancel</button>
+        <button class="sett-btn danger" id="confirm-ok-btn" onclick="confirmOk()">Delete</button>
+      </div>
+    </div>
+  </div><!-- /confirm-modal -->
+</div><!-- /confirm-overlay -->
 
 <!-- ══════════════════════════════════════════════════════════════
      AUTH OVERLAY (로그인 / 회원가입)
@@ -802,6 +827,10 @@
     <div class="sh-row">
       <span class="sh-label" data-i18n="shSave">Save note</span>
       <span class="sh-keys"><span class="kbd">Ctrl</span><span class="sh-plus">+</span><span class="kbd">S</span></span>
+    </div>
+    <div class="sh-row">
+      <span class="sh-label" data-i18n="shUndo">Undo (note editor)</span>
+      <span class="sh-keys"><span class="kbd">Ctrl</span><span class="sh-plus">+</span><span class="kbd">Z</span></span>
     </div>
     <div class="sh-row">
       <span class="sh-label" data-i18n="shToggleView">Toggle Media / Note</span>

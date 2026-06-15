@@ -923,6 +923,29 @@ body.light .guide-intro { color: #51688C; }
 body.light #add-res-modal { background: rgba(220, 234, 255,0.97); }
 body.light #add-res-overlay { background: rgba(170, 195, 225,0.65); }
 
+/* ── 범용 확인 팝업 (add-res 모달 스타일 재사용) ── */
+#confirm-overlay {
+  position: fixed; inset: 0; z-index: 240;
+  background: rgba(0, 9, 28,0.82);
+  display: none; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity .2s;
+}
+#confirm-overlay.visible { display: flex; }
+#confirm-overlay.open { opacity: 1; pointer-events: all; }
+#confirm-modal {
+  width: 420px;
+  background: rgba(0, 16, 40,0.97);
+  border: 1px solid rgba(0, 102, 255,0.38);
+  border-radius: 20px;
+  display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: 0 0 70px rgba(0, 102, 255,0.18), 0 40px 100px rgba(0,0,0,0.65);
+  transform: translateY(18px) scale(.98);
+  transition: transform .28s cubic-bezier(.34,1.56,.64,1);
+}
+#confirm-overlay.open #confirm-modal { transform: translateY(0) scale(1); }
+body.light #confirm-modal { background: rgba(220, 234, 255,0.97); }
+body.light #confirm-overlay { background: rgba(170, 195, 225,0.65); }
+
 /* ═══════════════════════════════════════════════════════════════
    FOCUS MODE  ─ 사이드바 / 우측 패널 숨기고 중앙 풀스크린
 ═══════════════════════════════════════════════════════════════ */
@@ -1016,6 +1039,18 @@ body.focus .stats-row { display: none; }
 }
 .resource-item:hover .res-delete { display: flex; }
 .res-delete:hover { background: rgba(210,60,60,0.26); border-color: #e06060; }
+
+/* 리소스 수정 버튼 (✎) — hover 시 노출 */
+.res-edit {
+  display: none;
+  width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;
+  background: rgba(0,102,255,0.1); border: 1px solid rgba(0,102,255,0.22);
+  color: var(--blue); font-size: 11px; cursor: pointer;
+  align-items: center; justify-content: center;
+  transition: all .15s; line-height: 1;
+}
+.resource-item:hover .res-edit { display: flex; }
+.res-edit:hover { background: rgba(51,133,255,0.26); border-color: var(--blue); }
 
 /* 음악 분류 토글 (♪). 평소엔 hover 시 노출, 음악으로 지정되면 항상 표시(활성). */
 .res-music {
@@ -1444,7 +1479,8 @@ body.light .an-card { background: rgba(200, 215, 235,0.6); }
   flex: 1; position: relative;
 }
 .archive-card-emoji {
-  position: absolute; top: 8px; right: 10px;
+  /* 우상단 고정 핀과 겹치지 않도록 좌측 상단(본문 흐름)으로 이동 */
+  align-self: flex-start;
   font-size: 24px; line-height: 1;
   pointer-events: none; user-select: none;
 }
